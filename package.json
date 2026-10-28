@@ -1,0 +1,20 @@
+{
+  "name": "bit-fleet-vehicle-portal",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "prisma:generate": "npx prisma generate --schema=prisma/schema.prisma",
+    "prisma:push": "npx prisma db push --schema=prisma/schema.prisma",
+    "prisma:seed": "node prisma/seed.js",
+    "prisma:migrate-mongo": "node prisma/migrate-to-mongo.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  }
+}

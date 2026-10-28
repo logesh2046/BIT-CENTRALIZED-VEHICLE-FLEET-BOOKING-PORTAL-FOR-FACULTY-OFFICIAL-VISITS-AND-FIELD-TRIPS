@@ -1,0 +1,61 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const config = require('./config');
+
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const vehicleRoutes = require('./routes/vehicleRoutes');
+const driverRoutes = require('./routes/driverRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
+const allocationRoutes = require('./routes/allocationRoutes');
+const tripRoutes = require('./routes/tripRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const auditRoutes = require('./routes/auditRoutes');
+const routeProxyRoutes = require('./routes/routeProxyRoutes');
+
+const app = express();
+
+// Middleware
+app.use(cors({
+  origin: config.clientUrl,
+  credentials: true,
+}));
+app.use(express.json());
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/drivers', driverRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/allocations', allocationRoutes);
+app.use('/api/trips', tripRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/audit-logs', auditRoutes);
+app.use('/api/routes', routeProxyRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ message: 'Internal server error' });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
+
+app.listen(config.port, () => {
+  console.log(`Server running on port ${config.port}`);
+  console.log(`Environment: ${config.nodeEnv}`);
+});
+
+module.exports = app;
