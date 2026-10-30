@@ -19,7 +19,10 @@
     "prisma:migrate-mongo": "node prisma/migrate-to-mongo.js"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.63.6"
+    "@esbuild/linux-x64": "0.25.12",
+    "@rollup/rollup-linux-x64-gnu": "4.63.6",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.3",
+    "lightningcss-linux-x64-gnu": "1.32.0"
   },
   "allowScripts": {
     "esbuild": true
