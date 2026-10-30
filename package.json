@@ -2,6 +2,9 @@
   "name": "bit-fleet-vehicle-portal",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "workspaces": [
     "server",
     "client"
@@ -14,6 +17,9 @@
     "prisma:push": "npx prisma db push --schema=prisma/schema.prisma",
     "prisma:seed": "node prisma/seed.js",
     "prisma:migrate-mongo": "node prisma/migrate-to-mongo.js"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.63.6"
   },
   "allowScripts": {
     "esbuild": true

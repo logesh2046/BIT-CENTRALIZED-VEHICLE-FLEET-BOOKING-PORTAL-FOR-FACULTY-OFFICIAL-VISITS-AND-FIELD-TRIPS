@@ -2,6 +2,19 @@ import { defineConfig, searchForWorkspaceRoot } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
+import fs from 'fs';
+
+// Resolve hoisted react/react-dom from parent workspace if present, otherwise default to local
+const parentReact = path.resolve(__dirname, '../node_modules/react');
+const parentReactDom = path.resolve(__dirname, '../node_modules/react-dom');
+
+const aliases = {};
+if (fs.existsSync(parentReact)) {
+  aliases['react'] = parentReact;
+}
+if (fs.existsSync(parentReactDom)) {
+  aliases['react-dom'] = parentReactDom;
+}
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,10 +23,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
-    alias: {
-      react: path.resolve(__dirname, '../node_modules/react'),
-      'react-dom': path.resolve(__dirname, '../node_modules/react-dom'),
-    },
+    alias: aliases,
   },
   server: {
     port: 5173,

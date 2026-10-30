@@ -22,7 +22,18 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: config.clientUrl,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      origin === config.clientUrl ||
+      origin === 'http://localhost:5173' ||
+      origin === 'http://localhost:3000' ||
+      /\.vercel\.app$/.test(new URL(origin).hostname)
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true,
 }));
 app.use(express.json());
@@ -56,9 +67,11 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-app.listen(config.port, () => {
-  console.log(`Server running on port ${config.port}`);
-  console.log(`Environment: ${config.nodeEnv}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(config.port, () => {
+    console.log(`Server running on port ${config.port}`);
+    console.log(`Environment: ${config.nodeEnv}`);
+  });
+}
 
 module.exports = app;
