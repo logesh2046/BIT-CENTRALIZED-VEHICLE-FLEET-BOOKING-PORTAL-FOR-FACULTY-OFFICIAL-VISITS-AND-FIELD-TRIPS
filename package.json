@@ -7,12 +7,16 @@
     "client"
   ],
   "scripts": {
+    "build": "npm run build --prefix client",
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
     "prisma:generate": "npx prisma generate --schema=prisma/schema.prisma",
     "prisma:push": "npx prisma db push --schema=prisma/schema.prisma",
     "prisma:seed": "node prisma/seed.js",
     "prisma:migrate-mongo": "node prisma/migrate-to-mongo.js"
+  },
+  "allowScripts": {
+    "esbuild": true
   },
   "dependencies": {
     "@prisma/client": "^5.22.0"
