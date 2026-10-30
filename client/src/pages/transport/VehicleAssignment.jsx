@@ -98,8 +98,8 @@ export default function VehicleAssignment() {
     try {
       await api.post('/allocations', {
         bookingId: selectedBooking.id,
-        vehicleId: parseInt(form.vehicleId),
-        driverId: parseInt(form.driverId),
+        vehicleId: form.vehicleId,
+        driverId: form.driverId,
       });
       setSuccess(`Vehicle & driver allocated for booking #${selectedBooking.id}. Notification emails dispatched via Brevo SMTP.`);
       setSelectedBooking(null);
@@ -117,8 +117,8 @@ export default function VehicleAssignment() {
   const openReassignment = async (alloc) => {
     setEditingAllocation(alloc);
     setReassignForm({
-      vehicleId: alloc.vehicleId.toString(),
-      driverId: alloc.driverId.toString(),
+      vehicleId: alloc.vehicleId?.toString() || '',
+      driverId: alloc.driverId?.toString() || '',
     });
     setError('');
     try {
@@ -150,10 +150,10 @@ export default function VehicleAssignment() {
     setReassigning(true);
     setError('');
     try {
-      await api.put(`/allocations/${editingAllocation.id}`, {
-        vehicleId: parseInt(reassignForm.vehicleId),
-        driverId: parseInt(reassignForm.driverId),
-      });
+      const payload = {};
+      if (reassignForm.vehicleId) payload.vehicleId = reassignForm.vehicleId;
+      if (reassignForm.driverId) payload.driverId = reassignForm.driverId;
+      await api.put(`/allocations/${editingAllocation.id}`, payload);
       setSuccess(`Allocation updated for booking #${editingAllocation.bookingId}. Update emails dispatched to faculty and driver.`);
       setEditingAllocation(null);
       fetchData();

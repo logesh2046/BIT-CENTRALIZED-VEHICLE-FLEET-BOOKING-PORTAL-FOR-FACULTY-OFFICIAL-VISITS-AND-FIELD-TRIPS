@@ -85,12 +85,26 @@ const createDriver = async (req, res) => {
     const existing = await prisma.driver.findUnique({ where: { licenseNumber } });
     if (existing) return res.status(400).json({ message: 'License number already exists' });
 
+    // Auto-link matching user account with role DRIVER
+    let matchingUserId = null;
+    const matchingUser = await prisma.user.findFirst({
+      where: {
+        role: 'DRIVER',
+        OR: [
+          { phone },
+          { name: { equals: name, mode: 'insensitive' } },
+        ],
+      },
+    });
+    if (matchingUser) matchingUserId = matchingUser.id;
+
     const driver = await prisma.driver.create({
       data: {
         name, phone, licenseNumber,
         licenseExpiry: new Date(licenseExpiry),
         status: status || 'AVAILABLE',
         assignedVehicleId: assignedVehicleId ? parseId(assignedVehicleId) : null,
+        userId: matchingUserId,
       },
     });
 
@@ -121,6 +135,20 @@ const updateDriver = async (req, res) => {
     if (status !== undefined) data.status = status;
     if (assignedVehicleId !== undefined) data.assignedVehicleId = assignedVehicleId ? parseId(assignedVehicleId) : null;
     if (isActive !== undefined) data.isActive = isActive;
+
+    // Link user account if not already linked
+    if (name || phone) {
+      const match = await prisma.user.findFirst({
+        where: {
+          role: 'DRIVER',
+          OR: [
+            ...(phone ? [{ phone }] : []),
+            ...(name ? [{ name: { equals: name, mode: 'insensitive' } }] : []),
+          ],
+        },
+      });
+      if (match) data.userId = match.id;
+    }
 
     const driver = await prisma.driver.update({
       where: { id: parseId(req.params.id) },

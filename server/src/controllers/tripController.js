@@ -9,8 +9,25 @@ const getTrips = async (req, res) => {
 
     // For drivers, show only their trips
     if (req.user.role === 'DRIVER') {
-      // Find the driver record for this user
-      const driver = await prisma.driver.findFirst({ where: { userId: req.user.id } });
+      // Find the driver record for this user (by userId, phone match, or name match)
+      let driver = await prisma.driver.findFirst({
+        where: {
+          OR: [
+            { userId: req.user.id },
+            ...(req.user.phone ? [{ phone: req.user.phone }] : []),
+            { name: { equals: req.user.name, mode: 'insensitive' } },
+          ],
+        },
+      });
+
+      // Auto-heal and persist the driver's userId linkage if missing
+      if (driver && (!driver.userId || driver.userId !== req.user.id)) {
+        await prisma.driver.update({
+          where: { id: driver.id },
+          data: { userId: req.user.id },
+        }).catch((err) => console.error('Auto-link driver userId error:', err.message));
+      }
+
       if (!driver) {
         return res.json({ trips: [] });
       }
@@ -74,7 +91,15 @@ const updateTripStatus = async (req, res) => {
 
     // Driver access check
     if (req.user.role === 'DRIVER') {
-      const driver = await prisma.driver.findUnique({ where: { userId: req.user.id } });
+      const driver = await prisma.driver.findFirst({
+        where: {
+          OR: [
+            { userId: req.user.id },
+            ...(req.user.phone ? [{ phone: req.user.phone }] : []),
+            { name: { equals: req.user.name, mode: 'insensitive' } },
+          ],
+        },
+      });
       if (!driver || !booking.allocation || booking.allocation.driverId !== driver.id) {
         return res.status(403).json({ message: 'Access denied' });
       }

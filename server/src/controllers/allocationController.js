@@ -143,7 +143,7 @@ const createAllocation = async (req, res) => {
     res.status(201).json(allocation);
   } catch (error) {
     console.error('Create allocation error:', error);
-    res.status(500).json({ message: 'Failed to create allocation' });
+    res.status(500).json({ message: error.message || 'Failed to create allocation' });
   }
 };
 
@@ -305,7 +305,7 @@ const updateAllocation = async (req, res) => {
     res.json(allocation);
   } catch (error) {
     console.error('Update allocation error:', error);
-    res.status(500).json({ message: 'Failed to update allocation' });
+    res.status(500).json({ message: error.message || 'Failed to update allocation' });
   }
 };
 
