@@ -18,10 +18,11 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const user = await login(email, password);
+      const normalizedEmail = email.trim().toLowerCase();
+      const user = await login(normalizedEmail, password);
       navigate(getDashboardPath(user.role));
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials or network connection.');
     } finally {
       setLoading(false);
     }
@@ -60,6 +61,9 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 placeholder="example@bit.edu"
                 required
                 className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-gray-900 bg-white placeholder:text-gray-400 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"

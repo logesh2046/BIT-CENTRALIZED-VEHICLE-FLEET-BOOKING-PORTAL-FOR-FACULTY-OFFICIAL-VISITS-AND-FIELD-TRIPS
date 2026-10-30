@@ -67,13 +67,17 @@ const createUser = async (req, res) => {
       return res.status(400).json({ message: 'Email, password, name, and role are required' });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    const existing = await prisma.user.findFirst({
+      where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+    });
     if (existing) return res.status(400).json({ message: 'Email already in use' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
-        email, password: hashedPassword, name, phone,
+        email: normalizedEmail, password: hashedPassword, name: name.trim(), phone: phone?.trim() || null,
         role, departmentId: departmentId ? parseId(departmentId) : null,
       },
       select: {

@@ -24,21 +24,44 @@ const app = express();
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    if (
-      origin === config.clientUrl ||
-      origin === 'http://localhost:5173' ||
-      origin === 'http://localhost:3000' ||
-      /\.vercel\.app$/.test(new URL(origin).hostname)
-    ) {
-      return callback(null, true);
+    try {
+      const url = new URL(origin);
+      if (
+        origin === config.clientUrl ||
+        url.hostname === 'localhost' ||
+        url.hostname === '127.0.0.1' ||
+        url.hostname.endsWith('.vercel.app') ||
+        url.hostname.endsWith('.onrender.com')
+      ) {
+        return callback(null, true);
+      }
+    } catch (e) {
+      // Allow fallback if URL cannot be parsed
     }
     return callback(null, true);
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+app.options('*', cors());
 app.use(express.json());
 
-// Health check
+// Root endpoint for status & health checks
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'BIT Centralized Vehicle Fleet Booking Portal API is running',
+    version: '1.0.0',
+    health: '/health',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });

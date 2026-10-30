@@ -12,10 +12,19 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    let user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
       include: { department: { select: { id: true, name: true, code: true } } },
     });
+
+    if (!user) {
+      user = await prisma.user.findFirst({
+        where: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+        include: { department: { select: { id: true, name: true, code: true } } },
+      });
+    }
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password' });
