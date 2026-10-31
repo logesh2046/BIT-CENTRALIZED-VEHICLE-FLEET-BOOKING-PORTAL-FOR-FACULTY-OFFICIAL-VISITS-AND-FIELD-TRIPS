@@ -297,13 +297,34 @@ ${routeUrl}
 const sendDriverAllocationEmail = async ({ booking, vehicle, driver, isUpdate = false }) => {
   const bookingId = booking.id;
 
-  // Find driver's email (from linked User account or fallback phone/pattern)
+  // Find driver's email (from linked User account, phone match, or name match)
   let driverEmail = null;
+  let driverUser = null;
+
   if (driver.userId) {
-    const driverUser = await prisma.user.findUnique({ where: { id: driver.userId } });
-    if (driverUser && driverUser.email) {
-      driverEmail = driverUser.email;
+    driverUser = await prisma.user.findUnique({ where: { id: driver.userId } });
+  }
+
+  // Fallback: search by driver's phone or name if userId was not linked
+  if (!driverUser) {
+    const cleanDName = driver.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const users = await prisma.user.findMany({ where: { role: 'DRIVER' } });
+    driverUser = users.find(u =>
+      (driver.phone && u.phone && u.phone.trim() === driver.phone.trim()) ||
+      u.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanDName
+    );
+
+    // Auto-heal driver's userId in DB so it stays linked permanently
+    if (driverUser && driver.id) {
+      await prisma.driver.update({
+        where: { id: driver.id },
+        data: { userId: driverUser.id },
+      }).catch(err => console.error('[AUTO-LINK DRIVER ERROR]', err.message));
     }
+  }
+
+  if (driverUser && driverUser.email) {
+    driverEmail = driverUser.email;
   }
 
   // Fallback to driver email format if not in User

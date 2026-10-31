@@ -94,6 +94,26 @@ const createUser = async (req, res) => {
       description: `Created user ${user.name} with role ${user.role}`,
     });
 
+    // If created user is a DRIVER, automatically link to matching Driver record
+    if (role === 'DRIVER') {
+      try {
+        const cleanName = user.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const drivers = await prisma.driver.findMany();
+        const matchedDriver = drivers.find(d =>
+          (user.phone && d.phone && d.phone.trim() === user.phone.trim()) ||
+          d.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanName
+        );
+        if (matchedDriver && !matchedDriver.userId) {
+          await prisma.driver.update({
+            where: { id: matchedDriver.id },
+            data: { userId: user.id },
+          });
+        }
+      } catch (linkErr) {
+        console.error('Failed to auto-link driver during user creation:', linkErr.message);
+      }
+    }
+
     res.status(201).json(user);
   } catch (error) {
     console.error('Create user error:', error);
@@ -128,6 +148,26 @@ const updateUser = async (req, res) => {
       entityId: user.id,
       description: `Updated user ${user.name}`,
     });
+
+    // If updated user is a DRIVER, automatically link to matching Driver record
+    if (user.role === 'DRIVER') {
+      try {
+        const cleanName = user.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const drivers = await prisma.driver.findMany();
+        const matchedDriver = drivers.find(d =>
+          (user.phone && d.phone && d.phone.trim() === user.phone.trim()) ||
+          d.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanName
+        );
+        if (matchedDriver && !matchedDriver.userId) {
+          await prisma.driver.update({
+            where: { id: matchedDriver.id },
+            data: { userId: user.id },
+          });
+        }
+      } catch (linkErr) {
+        console.error('Failed to auto-link driver during user update:', linkErr.message);
+      }
+    }
 
     res.json(user);
   } catch (error) {

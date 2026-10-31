@@ -85,17 +85,14 @@ const createDriver = async (req, res) => {
     const existing = await prisma.driver.findUnique({ where: { licenseNumber } });
     if (existing) return res.status(400).json({ message: 'License number already exists' });
 
-    // Auto-link matching user account with role DRIVER
+    // Auto-link matching user account with role DRIVER (by phone or normalized name)
     let matchingUserId = null;
-    const matchingUser = await prisma.user.findFirst({
-      where: {
-        role: 'DRIVER',
-        OR: [
-          { phone },
-          { name: { equals: name, mode: 'insensitive' } },
-        ],
-      },
-    });
+    const cleanDriverName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const candidateUsers = await prisma.user.findMany({ where: { role: 'DRIVER' } });
+    const matchingUser = candidateUsers.find(u =>
+      (phone && u.phone && u.phone.trim() === phone.trim()) ||
+      u.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanDriverName
+    );
     if (matchingUser) matchingUserId = matchingUser.id;
 
     const driver = await prisma.driver.create({
@@ -136,17 +133,15 @@ const updateDriver = async (req, res) => {
     if (assignedVehicleId !== undefined) data.assignedVehicleId = assignedVehicleId ? parseId(assignedVehicleId) : null;
     if (isActive !== undefined) data.isActive = isActive;
 
-    // Link user account if not already linked
+    // Link user account if not already linked (by phone or normalized name)
     if (name || phone) {
-      const match = await prisma.user.findFirst({
-        where: {
-          role: 'DRIVER',
-          OR: [
-            ...(phone ? [{ phone }] : []),
-            ...(name ? [{ name: { equals: name, mode: 'insensitive' } }] : []),
-          ],
-        },
-      });
+      const targetPhone = phone || driver?.phone;
+      const targetName = (name || driver?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const candidateUsers = await prisma.user.findMany({ where: { role: 'DRIVER' } });
+      const match = candidateUsers.find(u =>
+        (targetPhone && u.phone && u.phone.trim() === targetPhone.trim()) ||
+        (targetName && u.name.toLowerCase().replace(/[^a-z0-9]/g, '') === targetName)
+      );
       if (match) data.userId = match.id;
     }
 

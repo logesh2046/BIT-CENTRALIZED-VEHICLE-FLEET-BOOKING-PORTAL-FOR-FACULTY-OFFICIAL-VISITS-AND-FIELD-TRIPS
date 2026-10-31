@@ -121,7 +121,28 @@ const createAllocation = async (req, res) => {
       relatedId: parseId(bookingId),
     });
 
-    // Notify driver (find driver's user account if exists)
+    // Notify driver (find driver's user account if exists, auto-link if unlinked)
+    if (!driver.userId) {
+      try {
+        const cleanName = driver.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const users = await prisma.user.findMany({ where: { role: 'DRIVER' } });
+        const matchedUser = users.find(u =>
+          (driver.phone && u.phone && u.phone.trim() === driver.phone.trim()) ||
+          u.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanName
+        );
+        if (matchedUser) {
+          await prisma.driver.update({
+            where: { id: driver.id },
+            data: { userId: matchedUser.id },
+          });
+          driver.userId = matchedUser.id;
+          if (allocation.driver) allocation.driver.userId = matchedUser.id;
+        }
+      } catch (linkErr) {
+        console.error('Auto-link driver in allocation failed:', linkErr.message);
+      }
+    }
+
     if (driver.userId) {
       await createNotification({
         userId: driver.userId,
@@ -273,6 +294,26 @@ const updateAllocation = async (req, res) => {
     });
 
     // Notify assigned driver
+    if (!allocation.driver.userId) {
+      try {
+        const cleanName = allocation.driver.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const users = await prisma.user.findMany({ where: { role: 'DRIVER' } });
+        const matchedUser = users.find(u =>
+          (allocation.driver.phone && u.phone && u.phone.trim() === allocation.driver.phone.trim()) ||
+          u.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanName
+        );
+        if (matchedUser) {
+          await prisma.driver.update({
+            where: { id: allocation.driver.id },
+            data: { userId: matchedUser.id },
+          });
+          allocation.driver.userId = matchedUser.id;
+        }
+      } catch (linkErr) {
+        console.error('Auto-link driver in updateAllocation failed:', linkErr.message);
+      }
+    }
+
     if (allocation.driver.userId) {
       await createNotification({
         userId: allocation.driver.userId,
